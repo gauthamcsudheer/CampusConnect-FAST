@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  List, 
-  ListItem, 
-  ListItemText, 
-  Typography, 
+import {
+  List,
+  ListItem,
+  ListItemText,
+  Typography,
   Paper,
   CircularProgress,
   Box,
@@ -44,11 +44,11 @@ const TabPanel = ({ children, value, index, ...other }) => (
 );
 
 const EmptyState = ({ message }) => (
-  <Box 
-    display="flex" 
-    flexDirection="column" 
-    alignItems="center" 
-    justifyContent="center" 
+  <Box
+    display="flex"
+    flexDirection="column"
+    alignItems="center"
+    justifyContent="center"
     minHeight="200px"
     textAlign="center"
     p={3}

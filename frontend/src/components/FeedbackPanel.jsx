@@ -45,13 +45,13 @@ const FeedbackPanel = () => {
       if (!token) {
         throw new Error("No authentication token found");
       }
-      
+
       const response = await axios.get("http://localhost:8000/api/v1/feedback", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
-      
+
       if (response.data) {
         setFeedback(response.data.feedback || []);
         setSentimentAnalysis(response.data.sentiment_analysis);
@@ -136,14 +136,14 @@ const FeedbackPanel = () => {
 
       {/* Sentiment Analysis Summary */}
       {sentimentAnalysis && (
-        <Paper 
-          elevation={0} 
-          sx={{ 
-            p: 3, 
-            mb: 3, 
-            bgcolor: "white", 
-            borderRadius: 2, 
-            boxShadow: "0 2px 4px rgba(0,0,0,0.05)" 
+        <Paper
+          elevation={0}
+          sx={{
+            p: 3,
+            mb: 3,
+            bgcolor: "white",
+            borderRadius: 2,
+            boxShadow: "0 2px 4px rgba(0,0,0,0.05)"
           }}
         >
           <Typography variant="h6" gutterBottom>
@@ -159,18 +159,18 @@ const FeedbackPanel = () => {
                       {sentiment.charAt(0).toUpperCase() + sentiment.slice(1)}
                     </Typography>
                   </Box>
-                  <Typography 
-                    variant="h4" 
+                  <Typography
+                    variant="h4"
                     color={getSentimentColor(sentiment)}
                     sx={{ mb: 1 }}
                   >
                     {Math.round(percentage)}%
                   </Typography>
-                  <LinearProgress 
-                    variant="determinate" 
-                    value={percentage} 
+                  <LinearProgress
+                    variant="determinate"
+                    value={percentage}
                     color={getSentimentColor(sentiment)}
-                    sx={{ 
+                    sx={{
                       mt: 1,
                       height: 8,
                       borderRadius: 4,
@@ -190,7 +190,7 @@ const FeedbackPanel = () => {
             const sentiment = sentimentAnalysis?.individual_sentiments.find(
               s => s.id === item.id
             )?.sentiment.overall_sentiment;
-            
+
             return (
               <React.Fragment key={item.id}>
                 <ListItem>
