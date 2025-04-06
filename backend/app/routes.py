@@ -345,26 +345,29 @@ async def get_feedback(
         )
 
 @router.post("/feedback", response_model=schemas.Feedback)
-async def create_feedback(
+def create_feedback(
     feedback: schemas.FeedbackCreate,
     db: Session = Depends(database.get_db),
-    current_user: models.User = Depends(get_current_user)
+    current_user: models.UserDB = Depends(get_current_user)
 ):
     try:
+        # Log the received feedback data
+        print(f"Received feedback: {feedback}")
+        
+        # Create feedback with the exact category received
         db_feedback = models.Feedback(
+            user_id=current_user.id,
             message=feedback.message,
-            user_id=current_user.id
+            category=feedback.category  # Use the exact category from the request
         )
         db.add(db_feedback)
         db.commit()
         db.refresh(db_feedback)
         return db_feedback
     except Exception as e:
-        print(f"Error in create_feedback: {str(e)}")  # For debugging
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
+        db.rollback()
+        print(f"Error creating feedback: {str(e)}")  # Add error logging
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.delete("/users/{user_id}")
 async def delete_user(

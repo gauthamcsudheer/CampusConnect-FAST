@@ -57,8 +57,9 @@ class Feedback(Base):
     __tablename__ = "feedback"
 
     id = Column(Integer, primary_key=True, index=True)
-    message = Column(String)
     user_id = Column(Integer, ForeignKey("users.id"))
+    message = Column(String)
+    category = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     
     user = relationship("UserDB", back_populates="feedback")

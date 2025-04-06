@@ -14,6 +14,13 @@ import {
   Typography,
   Paper,
   CircularProgress,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  DialogContentText,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import ChatIcon from "@mui/icons-material/Chat";
 import SendIcon from "@mui/icons-material/Send";
@@ -27,6 +34,11 @@ const GlobalChatbot = () => {
   const [chatbotMessages, setChatbotMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [knowledgeBase, setKnowledgeBase] = useState("");
+  const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
+  const [feedbackMessage, setFeedbackMessage] = useState("");
+  const [feedbackCategory, setFeedbackCategory] = useState("infrastructure");
+  const [showFeedbackSuccess, setShowFeedbackSuccess] = useState(false);
+  const [showFeedbackError, setShowFeedbackError] = useState(false);
   const messagesEndRef = useRef(null);
   const { user } = useAuth();
 
@@ -56,7 +68,14 @@ const GlobalChatbot = () => {
   }, [chatbotMessages, isLoading]);
 
   const handleSendMessage = async () => {
-    if (userMessage.trim() === "") return;
+    if (!userMessage.trim()) return;
+
+    // Check if the message contains the word "feedback"
+    if (userMessage.toLowerCase().includes("feedback")) {
+      setShowFeedbackDialog(true);
+      setUserMessage(""); // Clear the input
+      return;
+    }
 
     const newMessages = [...chatbotMessages, { sender: "user", message: userMessage }];
     setChatbotMessages(newMessages);
@@ -64,40 +83,6 @@ const GlobalChatbot = () => {
     setIsLoading(true);
 
     try {
-      // Check if message contains feedback
-      if (userMessage.toLowerCase().includes("feedback")) {
-        try {
-          const token = localStorage.getItem("token");
-          await axios.post(
-            "http://localhost:8000/api/v1/feedback",
-            {
-              message: userMessage,
-              user_id: user?.id
-            },
-            {
-              headers: {
-                Authorization: `Bearer ${token}`
-              }
-            }
-          );
-          // Add a confirmation message for feedback
-          setChatbotMessages(prev => [...prev, { 
-            sender: "chatbot", 
-            message: "Thank you for your feedback! I've recorded it and it will be reviewed by the administration." 
-          }]);
-          setIsLoading(false);
-          return;
-        } catch (error) {
-          console.error("Error saving feedback:", error);
-          setChatbotMessages(prev => [...prev, { 
-            sender: "chatbot", 
-            message: "I apologize, but I couldn't save your feedback at this moment. Please try again later." 
-          }]);
-          setIsLoading(false);
-          return;
-        }
-      }
-
       // Regular chatbot response for non-feedback messages
       const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
       const response = await axios.post(
@@ -135,6 +120,51 @@ const GlobalChatbot = () => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
+    }
+  };
+
+  const handleFeedbackSubmit = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
+
+      // Log the category being sent
+      console.log("Submitting feedback with category:", feedbackCategory);
+
+      const response = await axios.post(
+        "http://localhost:8000/api/v1/feedback",
+        {
+          message: feedbackMessage,
+          category: feedbackCategory  // Send the exact category value
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.status === 200) {
+        setShowFeedbackDialog(false);
+        setShowFeedbackSuccess(true);
+        setFeedbackMessage("");
+        setFeedbackCategory("infrastructure"); // Reset to default
+        
+        // Add a confirmation message to the chat
+        setChatbotMessages(prev => [
+          ...prev,
+          { 
+            text: "Thank you for your feedback! It has been recorded and will be reviewed by the administration.", 
+            sender: "bot", 
+            timestamp: new Date() 
+          }
+        ]);
+      }
+    } catch (error) {
+      console.error("Error saving feedback:", error);
+      setShowFeedbackError(true);
     }
   };
 
@@ -418,6 +448,79 @@ How can I assist you today? 🤖✨`}
           </Box>
         </DialogContent>
       </Dialog>
+
+      <Dialog
+        open={showFeedbackDialog}
+        onClose={() => setShowFeedbackDialog(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Submit Feedback</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Please provide your feedback below. Your input helps us improve the system.
+          </DialogContentText>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Feedback Message"
+            type="text"
+            fullWidth
+            multiline
+            rows={4}
+            value={feedbackMessage}
+            onChange={(e) => setFeedbackMessage(e.target.value)}
+          />
+          <FormControl fullWidth margin="dense">
+            <InputLabel>Category</InputLabel>
+            <Select
+              value={feedbackCategory}
+              onChange={(e) => setFeedbackCategory(e.target.value)}
+              label="Category"
+            >
+              <MenuItem value="infrastructure">Infrastructure & Facilities</MenuItem>
+              <MenuItem value="academic">Academic Quality</MenuItem>
+              <MenuItem value="administrative">Administrative Services</MenuItem>
+              <MenuItem value="support">Student Support & Welfare</MenuItem>
+              <MenuItem value="campus">Campus Environment & Culture</MenuItem>
+              <MenuItem value="other">Other</MenuItem>
+            </Select>
+          </FormControl>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowFeedbackDialog(false)}>Cancel</Button>
+          <Button
+            onClick={handleFeedbackSubmit}
+            variant="contained"
+            color="primary"
+            disabled={!feedbackMessage.trim()}
+          >
+            Submit
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Snackbar
+        open={showFeedbackSuccess}
+        autoHideDuration={3000}
+        onClose={() => setShowFeedbackSuccess(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={() => setShowFeedbackSuccess(false)} severity="success">
+          Feedback submitted successfully!
+        </Alert>
+      </Snackbar>
+
+      <Snackbar
+        open={showFeedbackError}
+        autoHideDuration={3000}
+        onClose={() => setShowFeedbackError(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={() => setShowFeedbackError(false)} severity="error">
+          Failed to submit feedback. Please try again.
+        </Alert>
+      </Snackbar>
     </>
   );
 };

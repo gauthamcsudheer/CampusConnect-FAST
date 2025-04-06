@@ -4,6 +4,7 @@ from typing import Optional
 
 class FeedbackBase(BaseModel):
     message: str
+    category: str = "infrastructure"  # Default category
 
 class FeedbackCreate(FeedbackBase):
     pass
